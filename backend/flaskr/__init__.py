@@ -8,6 +8,22 @@ from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
 
+
+def paginate_questions(request, Question, search=None):
+    page = request.args.get("page", 1, type=int)
+    start = (page - 1) * QUESTIONS_PER_PAGE
+    end = start + QUESTIONS_PER_PAGE
+    if search:
+        questions = Question.query.order_by(Question.id).filter(
+                Question.title.ilike("%{}%".format(search))
+            )
+        questions_to_display = [question.format() for question in questions]
+        return questions_to_display
+    else:
+        questions = Question.query.slice(start, end).all()
+        questions_to_display = [question.format(    ) for question in questions]
+        return questions_to_display
+
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
@@ -16,17 +32,34 @@ def create_app(test_config=None):
     """
     @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
     """
+    CORS(app)
 
     """
     @TODO: Use the after_request decorator to set Access-Control-Allow
     """
+    @app.after_request
+    def after_request(response):
+        response.headers.add(
+            "Access-Control-Allow-Headers", "Content-Type,Authorization,true"
+        )
+        response.headers.add(
+            "Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS"
+        )
+        return response
 
     """
     @TODO:
     Create an endpoint to handle GET requests
     for all available categories.
     """
-
+    @app.route('/api/v1/categories', methods=['GET'])
+    def get_categories():
+        categories = Category.query.all()
+        categories_to_display = {category.format()["id"]: category.format()[
+            "type"] for category in categories}
+        return jsonify({
+            'categories': categories_to_display
+        })
 
     """
     @TODO:
@@ -40,6 +73,18 @@ def create_app(test_config=None):
     ten questions per page and pagination at the bottom of the screen for three pages.
     Clicking on the page numbers should update the questions.
     """
+    @app.route('/api/v1/questions', methods=['GET'])
+    def get_questions():
+        questions = paginate_questions(request, Question)
+        categories = Category.query.all()
+        categories_to_display = {category.format()["id"]: category.format()["type"] for category in categories}
+        return jsonify({
+            'questions': questions,
+            'totalQuestions': len(Question.query.all()),
+            'categories': categories_to_display,
+            'currentCategory': categories[0].type
+        })
+
 
     """
     @TODO:
@@ -48,6 +93,14 @@ def create_app(test_config=None):
     TEST: When you click the trash icon next to a question, the question will be removed.
     This removal will persist in the database and when you refresh the page.
     """
+
+    @app.route('/api/v1/questions/<int:question_id>', methods=['DELETE'])
+    def delete_question(question_id):
+        question = Question.query.filter(Question.id == question_id).one_or_none()
+        question.delete()
+        return jsonify({
+            "id": question.id
+        })
 
     """
     @TODO:
@@ -59,6 +112,43 @@ def create_app(test_config=None):
     the form will clear and the question will appear at the end of the last page
     of the questions list in the "List" tab.
     """
+
+    @app.route('/api/v1/questions', methods=['POST'])
+    def create_question():
+        body = request.get_json()
+
+        question = body.get('question', None)
+        answer = body.get('answer', None)
+        difficulty = body.get('difficulty', None)
+        category = body.get('category', None)
+        search = body.get("search", None)
+        
+        if difficulty:
+            difficulty = int(difficulty)
+        if category:
+            category = int(category)
+
+        try:
+            if search:
+                questions_to_display = paginate_questions(request, Question, search)
+                return jsonify({
+                    'success': True,
+                    'books': books_to_display,
+                    'total_books': len(books_to_display)
+                })
+            else:
+                book = Question(question=question, answer=answer,
+                                difficulty=difficulty, category=category)
+                book.insert()
+                books_to_display = paginate_questions(request, Question)
+                return jsonify({
+                    'success': True,
+                    'created': book.id,
+                    'books': books_to_display,
+                    'total_books': len(Question.query.all())
+                })
+        except:
+            abort(422)
 
     """
     @TODO:
