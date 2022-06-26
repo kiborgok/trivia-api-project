@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+//Add withRouter to inject history prop into Form component
+import { withRouter } from "react-router-dom";
 import $ from 'jquery';
 import '../stylesheets/FormView.css';
 
@@ -16,7 +18,7 @@ class FormView extends Component {
 
   componentDidMount() {
     $.ajax({
-      url: `/categories`, //TODO: update request URL
+      url: `/api/v1/categories`, //TODO: update request URL
       type: 'GET',
       success: (result) => {
         this.setState({ categories: result.categories });
@@ -32,7 +34,7 @@ class FormView extends Component {
   submitQuestion = (event) => {
     event.preventDefault();
     $.ajax({
-      url: '/questions', //TODO: update request URL
+      url: '/api/v1/questions', //TODO: update request URL
       type: 'POST',
       dataType: 'json',
       contentType: 'application/json',
@@ -48,7 +50,8 @@ class FormView extends Component {
       crossDomain: true,
       success: (result) => {
         document.getElementById('add-question-form').reset();
-        return;
+        // Add programmatic navigation to questions page on success 
+        return this.props.history.push('/');
       },
       error: (error) => {
         alert('Unable to add question. Please try your request again');
@@ -107,4 +110,4 @@ class FormView extends Component {
   }
 }
 
-export default FormView;
+export default withRouter(FormView);
