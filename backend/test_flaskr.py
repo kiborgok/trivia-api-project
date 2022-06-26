@@ -78,7 +78,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 422)
         self.assertEqual(data["success"], False)
         self.assertEqual(data["message"], "unprocessable")
-
+    # Change the question every time this route is run to pass the test
     def test_delete_question(self):
         res = self.client().delete('/api/v1/questions/7')
         data = json.loads(res.data)
