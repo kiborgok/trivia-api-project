@@ -12,6 +12,8 @@ from models import setup_db, Question, Category
 QUESTIONS_PER_PAGE = 10
 
 # Paginate helper function that return 10 questions per page
+
+
 def paginate_questions(request, Question, search=None):
     page = request.args.get("page", 1, type=int)
     start = (page - 1) * QUESTIONS_PER_PAGE
@@ -109,7 +111,8 @@ def create_app(test_config=None):
     """
 
     @app.route('/api/v1/questions/<int:question_id>', methods=['DELETE'])
-    # Delete a single question from the questions table with the specified question_id 
+    # Delete a single question from the questions table with the specified
+    # question_id
     def delete_question(question_id):
         try:
             question = Question.query.filter(
@@ -122,7 +125,7 @@ def create_app(test_config=None):
                     'success': True,
                     "id": question.id
                 })
-        except:
+        except BaseException:
             abort(422)
 
     """
@@ -137,7 +140,7 @@ def create_app(test_config=None):
     """
 
     @app.route('/api/v1/questions', methods=['POST'])
-    #Insert a question into the questions database
+    # Insert a question into the questions database
     def create_question():
         body = request.get_json()
 
@@ -156,12 +159,12 @@ def create_app(test_config=None):
                                     difficulty=difficulty, category=category)
                 question.insert()
                 return jsonify({
-                    'success': True,    
+                    'success': True,
                     "question": question.format()
                 })
             else:
                 abort(422)
-        except:
+        except BaseException:
             abort(422)
 
     """
@@ -176,7 +179,7 @@ def create_app(test_config=None):
     """
 
     @app.route('/api/v1/questions/search', methods=['POST'])
-    #Get all questions that have a substring of the request body search term
+    # Get all questions that have a substring of the request body search term
     def search_question():
         body = request.get_json()
 
@@ -197,7 +200,7 @@ def create_app(test_config=None):
                 'questions': questions_to_display,
                 'total_questions': len(total_found_questions)
             })
-        except:
+        except BaseException:
             abort(422)
 
     """
@@ -209,20 +212,21 @@ def create_app(test_config=None):
     category to be shown.
     """
 
-    @app.route('/api/v1/categories/<int:category_id>/questions', methods=['GET'])
+    @app.route('/api/v1/categories/<int:category_id>/questions',
+               methods=['GET'])
     # Retrieve all questions that are of the specified catecory id
     def get_questions_by_category(category_id):
         try:
-            questions = Question.query.filter(Question.category == str(category_id)).all()
+            questions = Question.query.filter(
+                Question.category == str(category_id)).all()
             return jsonify({
                 'success': True,
                 'questions': [question.format() for question in questions],
                 'total_questions': len(questions),
                 'current_category': category_id
             })
-        except:
+        except BaseException:
             abort(404)
-
 
     """
     @TODO:
@@ -237,7 +241,7 @@ def create_app(test_config=None):
     """
 
     @app.route('/api/v1/quizzes', methods=['POST'])
-    # Returns one random question within a specified category, and 
+    # Returns one random question within a specified category, and
     # previously returned questions are not returned
     def play():
         body = request.get_json()
@@ -251,7 +255,7 @@ def create_app(test_config=None):
                     Question.id.notin_((previous_questions))).all()
             else:
                 category_questions = Question.query.filter(
-                    Question.category==str(category['id']))
+                    Question.category == str(category['id']))
                 questions_to_play = category_questions.filter(
                     Question.id.notin_((previous_questions))).all()
 
@@ -262,7 +266,7 @@ def create_app(test_config=None):
                 'success': True,
                 'question': random_question
             })
-        except:
+        except BaseException:
             abort(422)
 
     """
